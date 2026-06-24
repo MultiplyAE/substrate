@@ -33,10 +33,12 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          # Core control-plane images (reuses the Makefile's ko build + LDFLAGS).
-          make build-images
-          # The gVisor runtime image is not in build-images; build it explicitly.
-          ko build --base-import-paths --tags "${TAG},latest" ./cmd/ateom-gvisor
+          # Build all control-plane images + the gVisor runtime image directly with ko, using the
+          # job-level KO_DOCKER_REPO (GHCR). We intentionally bypass `make build-images`, whose
+          # Makefile sets `export KO_DOCKER_REPO := gcr.io/$(PROJECT_ID)/ate-images` with ':=',
+          # which overrides the environment variable.
+          ko build --base-import-paths --tags "${TAG},latest" \
+            ./cmd/ateapi ./cmd/atecontroller ./cmd/atelet ./cmd/podcertcontroller ./cmd/atenet ./cmd/ateom-gvisor
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
