@@ -1,0 +1,54 @@
+name: release
+# Publish Agent Substrate images (ko) and Helm charts (OCI) to GHCR under
+# ghcr.io/multiplyae/substrate on a version tag. Uses the workflow GITHUB_TOKEN
+# (packages: write) — no personal access token needed.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  KO_DOCKER_REPO: ghcr.io/multiplyae/substrate
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: ko-build/setup-ko@v0.8
+
+      - name: Log in to GHCR (ko)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | ko login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push images
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # Core control-plane images (reuses the Makefile's ko build + LDFLAGS).
+          make build-images
+          # The gVisor runtime image is not in build-images; build it explicitly.
+          ko build --base-import-paths --tags "${TAG},latest" ./cmd/ateom-gvisor
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR (helm)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Package and push charts
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          for c in substrate substrate-crds; do
+            helm package "charts/${c}" --version "${VERSION}" --app-version "${VERSION}"
+            helm push "${c}-${VERSION}.tgz" oci://ghcr.io/multiplyae/substrate/helm
+          done
