@@ -1,3 +1,17 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 name: release
 # Publish Agent Substrate images (ko) and Helm charts (OCI) to GHCR under
 # ghcr.io/multiplyae/substrate on a version tag. Uses the workflow GITHUB_TOKEN
@@ -32,7 +46,10 @@ jobs:
       - name: Build and push images
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
+          # Strip the leading "v" so image tags equal the Helm chart appVersion (the
+          # package step below also strips it). The chart's componentImage helper defaults
+          # the image tag to .Chart.AppVersion, so the two MUST match or every image ref 404s.
+          TAG="${GITHUB_REF_NAME#v}"
           # Build all control-plane images + the gVisor runtime image directly with ko, using the
           # job-level KO_DOCKER_REPO (GHCR). We intentionally bypass `make build-images`, whose
           # Makefile sets `export KO_DOCKER_REPO := gcr.io/$(PROJECT_ID)/ate-images` with ':=',

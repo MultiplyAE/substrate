@@ -114,7 +114,9 @@ otel:
   endpoint: ""
 
 image:
-  registry: ghcr.io/kagent-dev/substrate
+  # This fork publishes the (upstream-reconciled) substrate images here. Default to the
+  # fork's registry so installs don't need a --set image.registry override.
+  registry: ghcr.io/multiplyae/substrate
   tag: ""
 
 images:
