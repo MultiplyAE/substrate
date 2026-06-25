@@ -70,8 +70,12 @@ spec:
       containers:
       - name: ate-controller
         image: {{ include "substrate.componentImage" (list "atecontroller" .) }}
-{{- if eq .Values.auth.mode "jwt" }}
         args:
+        # Always pin the ate-api dial target to the release-prefixed Service. The binary
+        # default (dns:///api.<ns>.svc:443) only resolves when the release name == chart
+        # name; any other release name yields "produced zero addresses".
+        - "--ateapi-conn-spec=dns:///{{ include "substrate.fullname" (list "api" .) }}.{{ .Release.Namespace }}.svc:443"
+{{- if eq .Values.auth.mode "jwt" }}
         - "--ateapi-auth=jwt"
         - "--ateapi-ca-file=/run/ateapi-ca/ca.crt"
         - "--ateapi-server-name={{ include "substrate.fullname" (list "api" .) }}.{{ .Release.Namespace }}.svc"

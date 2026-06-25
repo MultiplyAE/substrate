@@ -23,7 +23,9 @@ rules:
   resources: ["pods"]
   verbs: ["get", "watch", "list"]
 - apiGroups: ["ate.dev"]
-  resources: ["actortemplates"]
+  # ate-api-server runs informers over all three ate.dev kinds; without workerpools and
+  # sandboxconfigs its caches never sync and /readyz stays red.
+  resources: ["actortemplates", "workerpools", "sandboxconfigs"]
   verbs: ["get", "watch", "list"]
 # Secret reads for env source resolution are intentionally NOT granted
 # cluster-wide here. Each demo / tenant is responsible for granting

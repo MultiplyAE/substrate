@@ -32,7 +32,10 @@ jobs:
       - name: Build and push images
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
+          # Strip the leading "v" so image tags equal the Helm chart appVersion (the
+          # package step below also strips it). The chart's componentImage helper defaults
+          # the image tag to .Chart.AppVersion, so the two MUST match or every image ref 404s.
+          TAG="${GITHUB_REF_NAME#v}"
           # Build all control-plane images + the gVisor runtime image directly with ko, using the
           # job-level KO_DOCKER_REPO (GHCR). We intentionally bypass `make build-images`, whose
           # Makefile sets `export KO_DOCKER_REPO := gcr.io/$(PROJECT_ID)/ate-images` with ':=',
